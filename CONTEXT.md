@@ -103,11 +103,23 @@ In the target admin UI, turn **OFF** for the duration of the run:
 > from this tool.
 
 ### 3.3 Seed the source
-Create enough variety to be meaningful: tickets across several statuses and
-priorities, some with attachments, some with multi-message conversations, at least one
-**private note** (to prove privacy is preserved), a few contacts and companies, and
-some custom-field **values** (this is R-C — worth testing since the original validation
-could not).
+Don't build test data by hand — **`seed/` has the scripts**, including the exact
+100-ticket "worst case" dataset the tool was originally validated against. See
+`seed/README.md`.
+
+```bash
+export FD_SOURCE_DOMAIN=https://yoursource.freshdesk.com
+export FD_SOURCE_API_KEY=...
+python -X utf8 seed/seed_pilot_100.py     # 100 tickets, attachments, conversations
+python seed/seed_bulk.py 1000             # volume data for throughput testing
+```
+
+Turn the **source** account's outbound email off first — seeded requesters are fake
+addresses and the bounces can trip Freshdesk's outgoing-email block.
+
+One gap the seeder does not fill: **custom-field values** (R-C). The original
+validation dataset had fields defined but all values empty, so if you can add a few
+populated custom fields by hand, that closes a real untested path.
 
 ---
 

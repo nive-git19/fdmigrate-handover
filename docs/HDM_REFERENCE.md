@@ -58,7 +58,7 @@ Name, Email, Company, Phone, Title, Mobile phone, Address, Time zone (full GMT l
 Triggered at demo start ("It looks like Agents is missing on the Target.").
 - **Create agents on target:** "Add the same agent(s) on Freshdesk".
 - **Default agent** for unassigned + deleted/inactive agents, with a checkbox to auto-assign all unmatched.
-- Per-agent source→target dropdowns; **Auto-match** button; yellow = not matched. (Our run: niveditha@sdkinfinity.com auto-matched; dinesh@sdkinfinity.com→dinesh@oskloud.com.)
+- Per-agent source→target dropdowns; **Auto-match** button; yellow = not matched. (Our run: one agent auto-matched on identical email; the other needed a manual source→target pick because the addresses differed across the two accounts.)
 
 ---
 

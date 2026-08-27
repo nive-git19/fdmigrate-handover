@@ -9,3 +9,9 @@ reports/
 logs/
 config.yaml
 *.log
+
+# seed-script run artefacts (regenerated; contain real ids from your account)
+_pilot_files/
+_pilot_manifest.json
+seed/_pilot_files/
+seed/_pilot_manifest.json

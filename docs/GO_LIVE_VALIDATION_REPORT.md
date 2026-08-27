@@ -18,7 +18,7 @@ closed with a real client account before a Fortune-500-scale production run._
 |---|------|--------|--------|
 | V1 | Connectivity + auth (both accounts) | `check` | **PASS** |
 | V2 | Pre-flight value coverage (D4) | `check` — status/priority/source/type resolved on target | **PASS** (7/4/17/5 all resolve); negative-tested, catches gaps |
-| V3 | Agent-gap detection | `check` | **PASS** — flags `Dinesh <dinesh@sdkinfinity.com>` (no target agent) |
+| V3 | Agent-gap detection | `check` | **PASS** — correctly flags a source agent with no counterpart on the target |
 | V4 | Custom-field presence | `check` | **PASS** — all ticket/contact/company fields present |
 | V5 | Full-object migration | full pipeline run | **PASS** — 7 companies, 13 contacts, 1 group, canned, KB, **107/107 tickets, 0 failed** |
 | V6 | Completeness "N in = N out" (D1) | `verify --deep` | **PASS** — ticket 107/107, contact 13/13, company 7/7, 0 missing |
