@@ -1,0 +1,83 @@
+# =============================================================================
+# PRODUCTION Freshdesk -> Freshdesk migration config
+# Copy to config.yaml and fill in the two accounts. NEVER commit real keys.
+#   Secrets: leave api_key as "env:FD_SOURCE_API_KEY" / "env:FD_TARGET_API_KEY"
+#            and export those env vars, OR set them and leave api_key blank.
+# The SOURCE account is only ever READ. Only the TARGET is written to.
+# =============================================================================
+
+source:
+  domain: "https://SOURCE.freshdesk.com"
+  api_key: "env:FD_SOURCE_API_KEY"
+
+target:
+  domain: "https://TARGET.freshdesk.com"
+  api_key: "env:FD_TARGET_API_KEY"
+
+objects:
+  custom_fields: true     # runs FIRST: creates missing ticket/contact/company fields on target
+  agents: true            # matched to target by email only (never created)
+  companies: true
+  contacts: true
+  groups: true
+  tickets: true           # tickets + conversations + attachments
+  canned_responses: true
+  knowledge_base: true
+
+tickets:
+  updated_since: "2010-01-01T00:00:00Z"   # wide net; auto-windows past the 30k cap
+  ticket_limit: null                       # null = all; set e.g. 500 for a sample gate
+  include_spam: false
+  include_conversations: true
+  include_attachments: true
+
+  # ---------------------------------------------------------------------------
+  # ZERO-CUSTOMER-EMAIL MODE (recommended for production). Every conversation is
+  # posted as a NOTE — notes NEVER email the requester, so no old reply is ever
+  # re-sent and customers notice nothing. Notes keep the source's privacy: public
+  # notes/replies stay visible to the customer in the portal, private notes stay
+  # internal. This matches how HDM migrates (public notes, no re-emailing).
+  conversations_as_notes: true
+  #
+  # STILL MANDATORY even in notes mode: disable target outbound email BEFORE the
+  # run, because ticket-creation notifications, CONTACT-ACTIVATION emails, SLA
+  # escalations, CSAT surveys and automations email customers independently of
+  # replies. See docs/MIGRATION_GUIDE.md and docs/PRODUCTION_RUNBOOK.md Part C.
+  #
+  # Set false ONLY for a deliberate as-is run (agent replies posted as real
+  # /reply) with target notifications CONFIRMED off — higher agent-view fidelity,
+  # but any missed notification setting would email a real customer.
+  force_public_notes: false   # NEVER set true: it would expose private internal
+                              # notes (e.g. "refund approved by finance") to customers.
+  # ---------------------------------------------------------------------------
+
+  provenance_banner: true    # keep original created/updated/status + per-note time
+                             # (the API cannot back-date; this is how history survives)
+  # created_date_custom_field: cf_original_created_date  # create this TEXT field on
+                             # the target first if you want the original created date
+                             # in a dedicated, sortable field.
+
+attachments:
+  max_mb: 20                 # per-file cap; oversize files are logged, never silently lost
+  tmp_dir: "./_attachments_tmp"
+
+contacts:
+  update_on_match: true      # on email match, update target contact from source
+  updated_since: "2010-01-01T00:00:00Z"
+
+mapping:
+  agents: {}                 # source-email -> target-email, only for mismatched emails
+  custom_fields: {}          # source field name -> target field name, or "__skip__"
+  custom_field_strict: true  # drop unmapped custom fields (safe: one bad key rejects the whole record)
+  status: {}                 # override ONLY if the target has custom statuses with different ids
+  priority: {}
+  source: {}
+
+run:
+  save_every: 20
+  rate_limit_floor: 3        # proactively pause when this few API calls remain
+  spot_check_sample: 25
+  report_path:   "./reports/reconciliation.csv"
+  manifest_path: "./reports/attachment_manifest.csv"
+  failures_path: "./reports/failures.csv"
+  spot_check_path: "./reports/ticket_spot_check.csv"

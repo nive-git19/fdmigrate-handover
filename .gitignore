@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+_attachments_tmp/
+reports/
+logs/
+config.yaml
+*.log

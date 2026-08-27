@@ -1,0 +1,90 @@
+# =============================================================================
+# Freshdesk -> Freshdesk migration config
+# =============================================================================
+# Copy this to config.yaml and fill in your two accounts.
+# SECURITY: do NOT commit real API keys. Prefer environment variables:
+#   - set api_key to "env:FD_SOURCE_API_KEY" / "env:FD_TARGET_API_KEY"
+#   - or leave api_key blank and export FD_SOURCE_API_KEY / FD_TARGET_API_KEY
+# The source account is only ever READ. Only the target is written to.
+# =============================================================================
+
+source:
+  domain: "https://SOURCE-helpdesk.freshdesk.com"
+  api_key: "env:FD_SOURCE_API_KEY"
+
+target:
+  domain: "https://TARGET-helpdesk.freshdesk.com"
+  api_key: "env:FD_TARGET_API_KEY"
+
+# Which objects to migrate, and in this (dependency-correct) order.
+objects:
+  custom_fields: true     # identify custom fields in source, CREATE missing ones on target (runs first)
+  agents: true            # matched to target by email only - never created
+  companies: true         # auto-created by name if missing
+  contacts: true
+  groups: true            # auto-created by name if missing
+  tickets: true           # tickets + conversations + attachments
+  canned_responses: true  # migrated flat (no folder structure)
+  knowledge_base: true    # categories -> folders -> articles
+
+tickets:
+  # Wide window so archived tickets are included. The tool automatically
+  # date-windows past Freshdesk's 30,000-ticket list cap.
+  updated_since: "2010-01-01T00:00:00Z"
+  ticket_limit: null      # null = all; set e.g. 500 for a safe sample run
+  include_spam: false
+  include_conversations: true
+  include_attachments: true
+  # DEFAULT: conversations replicate AS-IS - customer replies stay incoming
+  # customer messages, agent replies post as real replies, private notes stay
+  # private. PRE-REQUISITE: turn OFF all notifications + automations on the
+  # target first (see MIGRATION_GUIDE.md), or replies will email customers.
+  # No content is injected either - a migrated ticket carries only its marker tag.
+  conversations_as_notes: false  # true = legacy safe mode: everything as notes (never emails)
+  force_public_notes: false      # notes-mode only: force every migrated note public
+  provenance_banner: false       # true = re-enable the old [Migrated] timestamp banner
+  # created_date_custom_field: cf_original_created_date  # preserve original created_at
+  # Match-wise filtering for verifiable batch migrations (omit = migrate all).
+  # A ticket must match ALL listed keys; each key OR's its own values.
+  # Use this to migrate one slice at a time, or to replicate a Freshdesk "View"
+  # (Views have no API - just translate the view's rules into these keys).
+  # filters:
+  #   status: [2, 3]               # 2=Open 3=Pending 4=Resolved 5=Closed
+  #   priority: [3, 4]             # 1=Low 2=Med 3=High 4=Urgent
+  #   group_id: 158000827370       # a single id or a list
+  #   responder_id: [123, 456]     # only tickets assigned to these agents
+  #   type: ["Incident", "Problem"]
+  #   tags: ["vip", "escalated"]   # match if the ticket has ANY of these tags
+  #   requester_id: 789
+  #   company_id: 321
+  #   created_after: "2025-01-01"  # ISO date/datetime bounds
+  #   created_before: "2025-12-31"
+  #   updated_after: "2025-06-01"
+
+attachments:
+  max_mb: 20              # per-file cap; oversize files are logged to the manifest, never silently lost
+  tmp_dir: "./_attachments_tmp"
+
+contacts:
+  update_on_match: true   # on email match, UPDATE the target contact from source (vs skip)
+
+mapping:
+  # Optional manual source-agent-email -> target-agent-email overrides.
+  # Same-email agents are matched automatically; only list the exceptions.
+  agents: {}
+  # Custom ticket field name -> target field name, or "__skip__" to drop.
+  # Anything not listed is dropped (custom_field_strict).
+  custom_fields: {}
+  custom_field_strict: true
+  # Status/priority/source are identity by default (same platform).
+  # Override only if the target has custom statuses with different ids.
+  status: {}
+  priority: {}
+  source: {}
+
+run:
+  save_every: 20                          # checkpoint cadence (records)
+  rate_limit_floor: 3                     # proactively pause when this few API calls remain in the window
+  report_path: "./reports/reconciliation.csv"
+  manifest_path: "./reports/attachment_manifest.csv"
+  failures_path: "./reports/failures.csv"
