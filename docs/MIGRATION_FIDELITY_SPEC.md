@@ -21,12 +21,15 @@ every pair field by field:
 | Private notes stay private | 20/20 | we match |
 | Requester matched by email | 20/20 | we match |
 | Responder matched by email | 20/20 | we match |
-| Status / priority / type / source | preserved (1 exception below) | we match |
+| Status / priority / type / source | **20/20** | we match |
 | `incoming` flag on customer messages | **0/20 — flattened to false** | **HDM loses this too** |
 | Ticket description | **replaced by the subject line**; the real description became the first conversation | **HDM loses this. We don't** |
 | `due_by` | dropped, or reset to migration time by the target's SLA | neither preserves it |
 | Tags | adds **two**: `imported` and `Helpdesk migrated` | cosmetic |
-| One ticket's status | source `Open` → target `Pending` | unexplained; worth watching |
+
+One target ticket now reads `Pending` where the source reads `Open`. That is a
+manual change made on our side after the migration, to observe SLA behaviour on
+open tickets — not something HDM did.
 
 ### What that run did *not* prove
 
