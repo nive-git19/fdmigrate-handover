@@ -4,9 +4,9 @@ The shared trial pair for migration testing and validation.
 
 | | Source | Target |
 |---|---|---|
-| Domain | `sdkinfinity-help.freshdesk.com` | `sdkinfinity8689.freshdesk.com` |
+| Domain | `sdkinfinity8689.freshdesk.com` | `sdkinfinity-help.freshdesk.com` |
 | Admin | `/a/admin` | `/a/admin` |
-| Region | **EU** | **US** |
+| Region | **US** | **EU** |
 | Role | **Read only** — never written to | **Written to** |
 | Plan | Trial | Trial |
 
@@ -40,12 +40,14 @@ anything.
 ### 0. The target is NOT empty, and its data has no migration markers
 
 ```
-TARGET  27 tickets (#20-#46), 6 companies, 20 contacts   - mirrors the source
-        tickets carrying an fd-migration-* marker: 0
+TARGET (EU)  30 tickets (#1-#30), 6 companies, 20 contacts
+SOURCE (US)  27 pre-existing tickets (#20-#46) that mirror them,
+             plus the 10-ticket demo set (#47-#56)
+tickets carrying an fd-migration-* marker, either side: 0
 ```
 
-Something already migrated into the target on 28 Aug. It was not this tool, or
-the markers would be there.
+The two accounts were populated from each other on 28 Aug by something that
+was not this tool, or the markers would be there.
 
 `fdmigrate` dedups on two layers: the local SQLite checkpoint and `fd-migration-*`
 marker tags on the target. Neither exists for that data, so **the tool cannot
@@ -120,14 +122,13 @@ currently have zero objects to migrate) and `docs/PRE_MIGRATION_TEST_CASES.md`
 
 ## Direction note
 
-This pair runs **EU → US**. The production engagement it's rehearsing for runs
-**US → EU** — the opposite direction.
+This pair runs **US → EU**, matching the direction of the production engagement
+it rehearses for.
 
-The tool itself is direction-agnostic; it just talks to two REST APIs. But
-attachments are served from region-specific hosts (`freshdeskusercontent-euc.com`
-for EU, `freshdeskusercontent.com` for US), so this pair exercises those two hosts
-in the reverse roles from production. Worth knowing if you see anything
-attachment-related behave oddly.
+That matters more than it looks. Attachments are served from region-specific
+hosts (`freshdeskusercontent.com` for US, `freshdeskusercontent-euc.com` for EU),
+so the pair exercises each host in the same role it will hold in production —
+reading from US, writing to EU.
 
 ---
 

@@ -15,3 +15,11 @@ _pilot_files/
 _pilot_manifest.json
 seed/_pilot_files/
 seed/_pilot_manifest.json
+
+# demo seeder run artefacts (real account ids / generated fixtures)
+_demo_files/
+_demo_manifest.json
+seed/_demo_files/
+seed/_demo_manifest.json
+_edge_manifest.json
+seed/_edge_manifest.json

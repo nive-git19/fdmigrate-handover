@@ -4,8 +4,10 @@
 #   export FD_SOURCE_API_KEY=...   # ask SDK - never stored in this repo
 #   export FD_TARGET_API_KEY=...
 #
-#   source = sdkinfinity-help    (EU pod)   - only ever READ
-#   target = sdkinfinity8689     (US pod)   - written to
+#   source = sdkinfinity8689     (US pod)   - only ever READ
+#   target = sdkinfinity-help    (EU pod)   - written to
+#
+# This runs US -> EU, the same direction as the production engagement.
 #
 # Both are TRIAL accounts: 50 API calls/min, and the Archive Tickets feature is
 # not on the plan. See docs/TEST_INSTANCES.md for what that does and does not
@@ -14,11 +16,11 @@
 
 
 source:
-  domain: "https://sdkinfinity-help.freshdesk.com"
+  domain: "https://sdkinfinity8689.freshdesk.com"
   api_key: "env:FD_SOURCE_API_KEY"
 
 target:
-  domain: "https://sdkinfinity8689.freshdesk.com"
+  domain: "https://sdkinfinity-help.freshdesk.com"
   api_key: "env:FD_TARGET_API_KEY"
 
 objects:
