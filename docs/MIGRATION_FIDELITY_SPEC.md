@@ -25,7 +25,7 @@ every pair field by field:
 | `incoming` flag on customer messages | **0/20 — flattened to false** | **HDM loses this too** |
 | Ticket description | **replaced by the subject line**; the real description became the first conversation | **HDM loses this. We don't** |
 | `due_by` | dropped, or reset to migration time by the target's SLA | neither preserves it |
-| Tags | adds **two**: `imported` and `Helpdesk migrated` | cosmetic |
+| Tags | adds `imported` (HDM's default) plus `Helpdesk migrated` (typed into the *Add a new tag to tickets* option by us) | cosmetic |
 
 One target ticket now reads `Pending` where the source reads `Open`. That is a
 manual change made on our side after the migration, to observe SLA behaviour on
