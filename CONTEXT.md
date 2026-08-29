@@ -110,6 +110,7 @@ Don't build test data by hand — **`seed/` has the scripts**, including the exa
 ```bash
 export FD_SOURCE_DOMAIN=https://yoursource.freshdesk.com
 export FD_SOURCE_API_KEY=...
+python -X utf8 seed/seed_edge_cases.py    # groups, KB, canned + ~30 edge cases
 python -X utf8 seed/seed_pilot_100.py     # 100 tickets, attachments, conversations
 python seed/seed_bulk.py 1000             # volume data for throughput testing
 ```

@@ -65,6 +65,39 @@ notes internal. Check it after migrating, every time.
 
 ---
 
+## `seed_edge_cases.py` — the cases that actually break migration tools
+
+`seed_pilot_100.py` covers volume and attachments. This one covers the nasty
+half, plus the three phases the pilot dataset never exercises at all.
+
+```bash
+export FD_SOURCE_DOMAIN=https://yourtrial.freshdesk.com
+export FD_SOURCE_API_KEY=...
+export FD_CANARY_EMAIL=you@gmail.com     # optional, enables the E24 canary
+python -X utf8 seed/seed_edge_cases.py
+```
+
+Creates ~30 tickets tagged **`zzz-edge`**, plus config:
+
+| Dimension | Coverage |
+|---|---|
+| Config | 3 **groups**, 2 KB categories / 3 folders / 9 articles (one **draft**), 2 canned folders / 4 responses — all three phases currently migrate **zero** objects without this |
+| Encoding | emoji, CJK, Greek, RTL Arabic/Hebrew, zero-width space, HTML entities |
+| Structure | a **30-message** thread, mixed incoming/outgoing/private |
+| Identity | unicode name, no-name contact, `other_emails` aliases, phone-only contact, requester who is also an agent, fully unassigned |
+| Values | **custom-field values** (the open risk R-C), non-default statuses, all 6 sources, due dates, time entries |
+| Negative | a **deleted** ticket and a **spam** ticket that must *not* migrate |
+| Canary | 5 tickets on a real mailbox you own — the oracle for the zero-email guarantee |
+
+Writes `_edge_manifest.json` with every id created; that file drives the
+post-migration assertions. Anything unsupported on a trial plan is printed and
+skipped rather than fatal — **record what skipped, that list is itself a finding.**
+
+Each case maps to a numbered entry in `docs/TEST_DATASET_SPEC.md`, and the tests
+that consume them are `docs/PRE_MIGRATION_TEST_CASES.md`.
+
+---
+
 ## `seed_bulk.py` — volume data for throughput testing
 
 ```bash
@@ -140,8 +173,9 @@ export FD_SOURCE_DOMAIN=https://yoursource.freshdesk.com
 export FD_SOURCE_API_KEY=...
 export FD_TARGET_API_KEY=...
 
-python seed/seed_pilot_100.py     # 2. build the dataset
-python seed/introspect.py         # 3. do the accounts line up?
+python seed/seed_edge_cases.py    # 2. groups, KB, canned + the edge cases
+python seed/seed_pilot_100.py     # 3. volume, attachments, conversations
+python seed/introspect.py         # 4. do the accounts line up?
 python -m fdmigrate check --config config.yaml
 python -m fdmigrate run   --config config.yaml --dry-run
 python -m fdmigrate run   --config config.yaml --only tickets --limit 20
