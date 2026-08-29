@@ -23,3 +23,8 @@ seed/_demo_files/
 seed/_demo_manifest.json
 _edge_manifest.json
 seed/_edge_manifest.json
+_deep_files/
+_deep_manifest.json
+seed/_deep_files/
+seed/_deep_manifest.json
+seed/_fxtest/
