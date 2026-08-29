@@ -155,6 +155,37 @@ This is the script for measuring throughput — but read
 
 ---
 
+## `assert_migration.py` — the test cases, executable
+
+The checklists in `docs/` are things a human ticks. This runs them.
+
+```bash
+export FD_SOURCE_DOMAIN=...  FD_SOURCE_API_KEY=...
+export FD_TARGET_DOMAIN=...  FD_TARGET_API_KEY=...
+
+python -X utf8 seed/assert_migration.py                 # every seeded dataset
+python -X utf8 seed/assert_migration.py --set deep      # one dataset
+python -X utf8 seed/assert_migration.py --csv out.csv   # evidence pack
+```
+
+Read-only. For every seeded ticket it compares subject, status, priority, type,
+source, group, responder, requester, custom fields, CC, conversation count,
+private-note count, attachment **names and sizes**, time entries and tags.
+Exit code is non-zero on any failure, so it drops into CI.
+
+Target tickets are matched by the `fd-migration-{source_id}` marker tag, falling
+back to exact subject; the report says which route matched, because "matched by
+subject" is itself worth knowing. Subject matching is also what lets it validate
+a **competitor's** migration, not just ours.
+
+Two guards worth knowing about, because both fail silently against the API:
+
+- conversations are read through the **paginated** endpoint, never the ticket
+  embed — `include=conversations` caps at 10 and returns HTTP 200
+- attachments are collected from **notes as well as descriptions**
+
+---
+
 ## `introspect.py` — pre-migration safety check
 
 ```bash

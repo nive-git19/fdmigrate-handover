@@ -146,6 +146,37 @@ Escalations          list=None  detail=[158018755200]
 > `fdmigrate` already reads membership from the detail endpoint and **merges**
 > rather than overwrites (`phases/groups.py:50-71`). Also not a bug in our tool.
 
+### 2.6 SLA deadlines: carryable, but only forwards
+
+```
+due_by / fr_due_by, FUTURE date, status Open       -> accepted, preserved exactly
+due_by / fr_due_by, status Pending / Waiting on..  -> 400 "status doesn't have sla timer on"
+due_by / fr_due_by, PAST date                      -> 400 "Has to be greater than
+                                                           ticket creation time"
+PUT /sla_policies/{default}                        -> 400 cannot_update_default_sla
+```
+
+Three consequences:
+
+1. **A still-open ticket whose deadline is in the future keeps its real
+   deadline.** HDM dropped these entirely, so we are ahead here.
+2. **An already-breached ticket cannot keep its deadline.** Because `created_at`
+   is forced to the migration moment (§2.1), every historical deadline is "in the
+   past" and is refused. Left alone, the target's own policy starts a *fresh*
+   clock, so a ticket three weeks overdue arrives looking healthy. Carry the
+   original in a custom field and park those tickets in a paused status.
+3. **The Default SLA policy cannot be disabled through the API.** To run a
+   migration without an escalation storm, create a custom policy scoped to the
+   migration tag with escalation off, in the admin UI, before the run.
+
+Also check **business hours** before any run: SLA deadlines are computed against
+them, so a wrong timezone shifts every deadline on the instance. A fresh trial
+defaults to `Chennai, 08:00-17:00`.
+
+`fdmigrate` already implements the carry-and-retry (`phases/tickets.py:236-286`,
+validation V10): it sends the deadlines when the status has a timer, and drops
+and retries when the target refuses them.
+
 ### 2.5 Smaller ones
 
 | Finding | Consequence |
@@ -154,6 +185,7 @@ Escalations          list=None  detail=[158018755200]
 | Freshdesk **strips `data:` URI images** from bodies | inline images must be hosted attachments; a data URI is silently removed |
 | `unique_external_id` **is accepted** on create | a cleaner dedup key than marker tags — worth considering as a second layer |
 | Deleting a contact **permanently reserves its phone number** | close contacts that have phones; only delete phone-less ones |
+| `per_page` on a **detail** endpoint returns 400 `invalid_field` | only list endpoints accept it; a shared HTTP helper that always injects it breaks every single-record fetch |
 
 ---
 
