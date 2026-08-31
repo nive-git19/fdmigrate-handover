@@ -177,6 +177,92 @@ defaults to `Chennai, 08:00-17:00`.
 validation V10): it sends the deadlines when the status has a timer, and drops
 and retries when the target refuses them.
 
+### 2.7 Two endpoints send real customer email, and no setting stops them
+
+**This is the highest-consequence finding in this document.** Proven live on
+31 Aug 2026 while seeding a 1,000-ticket volume set.
+
+Two write paths cause Freshdesk to send mail to the requester:
+
+| Call | Sends? | Governed by notification settings? |
+|---|---|---|
+| `POST /tickets/{id}/reply` | **always** | **no** |
+| `POST /tickets` with `source: 10` (Outbound Email) | **always** | **no** |
+| `POST /tickets/{id}/notes` `private: true` | never | n/a |
+| `POST /tickets/{id}/notes` `private: false` | no | yes - "Agent Adds Comment to Ticket" |
+| `POST /tickets` with any other source | no | yes - "New Ticket Created" |
+
+The evidence, not the theory:
+
+* Every **requester notification on the source instance was already OFF** -
+  New Ticket Created, Agent Adds Comment, Agent Solves, Agent Closes - and
+  replies still went out and bounced.
+* In one 24-ticket run, ~70 public notes generated **zero** mail, while the
+  only two tickets created with `source: 10` (#119, #131) both bounced.
+
+A reply is not a notification. It is the agent sending an email, and that is
+the endpoint's entire purpose - so there is no suppress flag, and the admin
+notification screen has no bearing on it.
+
+**Consequence for a production migration.** A tool that recreates agent
+replies through `/reply` will email the client's live customers - roughly
+30,000 messages for a 7,975-ticket estate at ~4 messages each - and the
+standard "switch off all outbound notifications before migrating" precaution
+would pass its canary test and still send every one of them.
+
+The only email-safe way to reproduce a thread through the public v2 API is
+notes: `private: true` for internal notes, `private: false` with
+`incoming: true` for customer-voiced messages, `private: false` for agent
+messages. This costs fidelity - the conversation type reads as a note rather
+than a reply - and it is the reason HDM can migrate replies silently while we
+cannot: HDM is not on the public API.
+
+**Required of the tool:**
+
+1. Never call `/reply`. Add a hard guard, not a config flag.
+2. Never write `source: 10`. Map it to `1` (Email) and record the original in
+   a custom field.
+3. Ship a pre-flight canary: create one ticket against a mailbox we control
+   and assert nothing arrives, before any real record is written.
+
+### 2.8 The `source` list the API advertises is not the list it accepts
+
+`GET /ticket_fields` returns 17 source choices. `POST /tickets` accepts
+**seven**: `1,2,3,7,9,11,10`. Anything else fails with:
+
+```
+400 {"field":"source","message":"It should be one of these values: '1,2,3,7,9,11,10'"}
+```
+
+Two traps in one:
+
+* **WhatsApp (13), Web Chat (15), SMS (22), Forum (4), MobiHelp (8) and the
+  social sources (17-20) are readable but not writable.** A ticket that
+  originated in any of them cannot be recreated with its true source.
+* **`7` (Chat) is accepted but is not in the advertised list at all**, so a
+  migrator that validates against `GET /ticket_fields` will reject a legal
+  value.
+
+Combined with 2.7, `10` is legal but must never be used. The safe writable
+set is therefore `1, 2, 3, 7, 9, 11`.
+
+Mitigation: map unwritable sources to `1` (Email) and carry the true source in
+a custom field, the same pattern used for `created_at`.
+
+### 2.9 Multipart encodes Python booleans as `"True"`
+
+A checkbox custom field sent through the multipart path fails with:
+
+```
+400 {"field":"custom_fields.cf_<name>","message":"It should be a/an Boolean",
+     "code":"datatype_mismatch"}
+```
+
+Multipart carries every value as text, so `True` goes out capitalised and
+Freshdesk rejects it. JSON bodies are unaffected - which makes this
+**intermittent by attachment**: the identical payload succeeds on a ticket
+with no files and fails on one with files. Lower-case booleans on the wire.
+
 ### 2.5 Smaller ones
 
 | Finding | Consequence |
